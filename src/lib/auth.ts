@@ -9,6 +9,75 @@ const DEFAULT_ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "admin@jayjayrides.co.ke"
 const DEFAULT_ADMIN_PHONE = process.env.ADMIN_PHONE ?? "+254700000000";
 const DEFAULT_ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "12345";
 
+export function normalizeEmail(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+export function normalizePhoneNumber(value: string): string {
+  const cleaned = value.trim().replace(/\s+/g, "");
+  if (!cleaned) return "";
+
+  const digits = cleaned.replace(/\D/g, "");
+  if (!digits) return "";
+
+  if (cleaned.startsWith("+")) {
+    const withoutPlus = digits;
+    if (withoutPlus.startsWith("254") && withoutPlus.length === 12) return `+${withoutPlus}`;
+    if (withoutPlus.length === 9) return `+254${withoutPlus}`;
+    if (withoutPlus.length === 10) return `+254${withoutPlus.slice(1)}`;
+    return `+${withoutPlus}`;
+  }
+
+  if (digits.startsWith("0") && digits.length === 10) {
+    return `+254${digits.slice(1)}`;
+  }
+
+  if (digits.startsWith("254") && digits.length === 12) {
+    return `+${digits}`;
+  }
+
+  if (digits.length === 9) {
+    return `+254${digits}`;
+  }
+
+  if (digits.length === 10) {
+    return `+254${digits.slice(1)}`;
+  }
+
+  return `+${digits}`;
+}
+
+export function getPhoneCandidates(value: string): string[] {
+  const cleaned = value.trim();
+  if (!cleaned) return [];
+
+  const candidates = new Set<string>();
+  const raw = cleaned.replace(/\s+/g, "");
+  candidates.add(raw);
+
+  const normalized = normalizePhoneNumber(raw);
+  if (normalized) candidates.add(normalized);
+
+  const digitsOnly = raw.replace(/\D/g, "");
+  if (digitsOnly) {
+    candidates.add(digitsOnly);
+    if (digitsOnly.startsWith("0") && digitsOnly.length === 10) {
+      candidates.add(`254${digitsOnly.slice(1)}`);
+    }
+    if (digitsOnly.startsWith("254") && digitsOnly.length === 12) {
+      candidates.add(`+${digitsOnly}`);
+    }
+    if (digitsOnly.length === 9) {
+      candidates.add(`+254${digitsOnly}`);
+    }
+    if (digitsOnly.length === 10) {
+      candidates.add(`+254${digitsOnly.slice(1)}`);
+    }
+  }
+
+  return [...candidates].filter(Boolean);
+}
+
 export function hashPassword(password: string): string {
   const salt = crypto.randomBytes(16).toString("hex");
   const hash = crypto.scryptSync(password, salt, 64).toString("hex");

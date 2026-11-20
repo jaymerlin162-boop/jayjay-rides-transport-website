@@ -12,7 +12,8 @@ export default async function LoginPage({
 }) {
   const { error } = await searchParams;
   const user = await getCurrentUser();
-  if (user) redirect(user.role === "Admin" ? "/admin" : "/my-rides");
+  // Allow Admins to reach the login page so they can sign in as a different account.
+  if (user && user.role === "Student") redirect("/my-rides");
 
   return (
     <main className="grid min-h-screen place-items-center px-4 py-10">

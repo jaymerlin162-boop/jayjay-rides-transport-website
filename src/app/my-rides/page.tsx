@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { BackButton } from "@/components/back-button";
 import { db } from "@/db";
 import { bookings, drivers } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
@@ -60,6 +61,7 @@ export default async function MyRidesPage() {
       mpesaReceipt: bookings.mpesaReceipt,
       createdAt: bookings.createdAt,
       driverName: drivers.name,
+      driverNumberPlate: drivers.numberPlate,
       driverVehicle: drivers.vehicleType,
     })
     .from(bookings)
@@ -70,14 +72,14 @@ export default async function MyRidesPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-8">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-black text-slate-900 dark:text-slate-100">
-            My Rides
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Welcome, {user.name}
-          </p>
+        <div className="flex items-center gap-4">
+          <BackButton />
+          <div>
+            <h1 className="text-3xl font-black text-slate-900 dark:text-slate-100">My Rides</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Welcome, {user.name}</p>
+          </div>
         </div>
+
         <div className="flex items-center gap-3">
           <Link
             href="/book"
@@ -140,9 +142,11 @@ export default async function MyRidesPage() {
                 </p>
               </div>
               <div>
-                <p className="text-slate-500">Driver</p>
+                <p className="text-slate-500">Driver / Number plate</p>
                 <p className="font-semibold text-slate-900 dark:text-slate-100">
-                  {r.driverName ? `${r.driverName} (${r.driverVehicle})` : "Awaiting dispatch"}
+                  {r.driverName
+                    ? `${r.driverName} · ${r.driverNumberPlate ?? "Plate not set"} · ${r.driverVehicle}`
+                    : "Awaiting dispatch"}
                 </p>
               </div>
             </div>

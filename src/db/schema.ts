@@ -32,6 +32,7 @@ export const users = pgTable("users", {
 export const drivers = pgTable("drivers", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
+  numberPlate: varchar("number_plate", { length: 20 }),
   phoneNumber: varchar("phone_number", { length: 50 }).notNull(),
   vehicleType: rideTypeEnum("vehicle_type").notNull(),
   isAvailable: boolean("is_available").notNull().default(true),

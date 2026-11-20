@@ -19,7 +19,8 @@ export default async function RegisterPage({
 }) {
   const { error } = await searchParams;
   const user = await getCurrentUser();
-  if (user) redirect(user.role === "Admin" ? "/admin" : "/my-rides");
+  // Allow Admin users to access the register page (so admins can create student accounts).
+  if (user && user.role === "Student") redirect("/my-rides");
 
   return (
     <main className="grid min-h-screen place-items-center px-4 py-10">

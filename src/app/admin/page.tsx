@@ -71,7 +71,7 @@ export default async function AdminPage() {
   const stats = [
     { label: "Bookings today", value: String(todayAgg?.count ?? 0), cls: "text-slate-900 dark:text-slate-100" },
     { label: "Pending", value: String(pendingAgg?.count ?? 0), cls: "text-amber-600 dark:text-amber-400" },
-    { label: "Active drivers", value: String(activeAgg?.count ?? 0), cls: "text-blue-600 dark:text-blue-400" },
+    { label: "Available number plates", value: String(activeAgg?.count ?? 0), cls: "text-blue-600 dark:text-blue-400" },
     { label: "Revenue (Paid)", value: `KES ${Number(revAgg?.sum ?? 0)}`, cls: "text-green-600 dark:text-green-400" },
   ];
 
@@ -83,7 +83,7 @@ export default async function AdminPage() {
             Admin · Dispatch
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Manage rides, drivers and payments
+            Manage rides, number plates and payments
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -155,11 +155,11 @@ export default async function AdminPage() {
                       className="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
                     >
                       <option value="" disabled>
-                        Assign driver…
+                        Assign Driver…
                       </option>
                       {availableDrivers.map((d) => (
                         <option key={d.id} value={d.id}>
-                          {d.name} ({d.vehicleType})
+                          {d.name} — {d.numberPlate ?? "Plate not set"} ({d.vehicleType})
                         </option>
                       ))}
                     </select>
@@ -173,7 +173,7 @@ export default async function AdminPage() {
                   <DeleteBookingForm bookingId={b.id} action={deleteBooking} />
                 </div>
                 {availableDrivers.length === 0 && (
-                  <p className="mt-2 text-xs text-red-600">No available drivers.</p>
+                  <p className="mt-2 text-xs text-red-600">No available number plates.</p>
                 )}
               </div>
             );
@@ -193,7 +193,7 @@ export default async function AdminPage() {
                 <th className="px-4 py-3">#</th>
                 <th className="px-4 py-3">Student</th>
                 <th className="px-4 py-3">Route</th>
-                <th className="px-4 py-3">Driver</th>
+                <th className="px-4 py-3">Driver / Number plate</th>
                 <th className="px-4 py-3">Fare</th>
                 <th className="px-4 py-3">Status</th>
               </tr>
@@ -224,7 +224,14 @@ export default async function AdminPage() {
                       <div className="text-xs text-slate-500">{b.rideType}</div>
                     </td>
                     <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
-                      {driver ? `${driver.name}` : <span className="text-slate-400">—</span>}
+                      {driver ? (
+                        <div>
+                          <div className="font-medium">{driver.name}</div>
+                          <div className="text-xs text-slate-500">
+                            {driver.numberPlate ?? "Plate not set"} · {driver.vehicleType}
+                          </div>
+                        </div>
+                      ) : <span className="text-slate-400">—</span>}
                     </td>
                     <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">
                       KES {Number(b.fare)}

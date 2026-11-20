@@ -14,6 +14,9 @@ import {
   verifyPassword,
   hashPassword,
   ensureAdminBootstrap,
+  normalizeEmail,
+  normalizePhoneNumber,
+  getPhoneCandidates,
 } from "@/lib/auth";
 import { initiateStkPush } from "@/lib/mpesa";
 import { sendBookingEmail } from "@/lib/email";
@@ -31,10 +34,18 @@ export async function login(formData: FormData): Promise<void> {
 
   await ensureAdminBootstrap();
 
+  const email = normalizeEmail(identifier);
+  const phoneCandidates = getPhoneCandidates(identifier);
+  const lookupClauses = [eq(users.email, email)];
+
+  for (const phone of phoneCandidates) {
+    lookupClauses.push(eq(users.phoneNumber, phone));
+  }
+
   const [user] = await db
     .select()
     .from(users)
-    .where(or(eq(users.phoneNumber, identifier), eq(users.email, identifier)))
+    .where(or(...lookupClauses))
     .limit(1);
 
   if (!user || !verifyPassword(password, user.passwordHash)) {
@@ -48,8 +59,8 @@ export async function login(formData: FormData): Promise<void> {
 
 export async function register(formData: FormData): Promise<void> {
   const name = String(formData.get("name") ?? "").trim();
-  const phoneNumber = String(formData.get("phoneNumber") ?? "").trim();
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const phoneNumber = normalizePhoneNumber(String(formData.get("phoneNumber") ?? ""));
+  const email = normalizeEmail(String(formData.get("email") ?? ""));
   const password = String(formData.get("password") ?? "");
   const confirm = String(formData.get("confirm") ?? "");
 
@@ -59,10 +70,11 @@ export async function register(formData: FormData): Promise<void> {
   if (password.length < 4) redirect("/register?error=2");
   if (password !== confirm) redirect("/register?error=3");
 
+  const duplicateChecks = [eq(users.email, email), ...getPhoneCandidates(phoneNumber).map((candidate) => eq(users.phoneNumber, candidate))];
   const existing = await db
     .select({ id: users.id })
     .from(users)
-    .where(or(eq(users.phoneNumber, phoneNumber), eq(users.email, email)))
+    .where(or(...duplicateChecks))
     .limit(1);
 
   if (existing.length > 0) redirect("/register?error=4");
@@ -89,9 +101,29 @@ export async function logout(): Promise<void> {
 
 /* --------------------------- Booking --------------------------- */
 
-function computeFare(rideType: string): number {
-  const base = rideType === "Taxi" ? 250 : 80;
-  return base;
+function computeFare(rideType: string, pickup: string, destination: string): number {
+  const text = `${pickup} ${destination}`.toLowerCase();
+  const campusKeywords = ["campus", "hostel", "class", "classroom", "transit", "tum", "transit desk", "technical university"];
+  const townKeywords = ["town", "mombasa", "downtown", "station", "bus", "market", "mall", "road"];
+
+  const isCampus = campusKeywords.some((kw) => text.includes(kw));
+  const isTown = townKeywords.some((kw) => text.includes(kw));
+
+  if (rideType === "Tuk-tuk" || rideType === "Tuk tuk" || rideType === "Tuktuk") {
+    if (isCampus) return 50; // short on-campus trips
+    if (isTown) return 120; // campus -> town
+    return 80; // default
+  }
+
+  // Taxi pricing: can be cheaper for short/local trips
+  if (rideType === "Taxi") {
+    if (isCampus) return 90; // short taxi rides within campus
+    if (isTown) return 300; // longer town trips
+    return 200; // default taxi estimate
+  }
+
+  // fallback
+  return 100;
 }
 
 async function sendCompanyEmail(b: {
@@ -155,7 +187,7 @@ export async function createBooking(
     return { success: false, message: "Please fill in all fields." };
   }
 
-  const fare = computeFare(rideType);
+  const fare = computeFare(rideType, pickupLocation, destination);
   const checkoutRequestId = crypto.randomUUID();
 
   const [booking] = await db

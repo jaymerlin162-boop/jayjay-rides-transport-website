@@ -35,8 +35,8 @@ export function BookingForm() {
           defaultValue="Tuk-tuk"
           className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-slate-900 outline-none transition focus:border-yellow-500 focus:ring-2 focus:ring-yellow-400/40 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
         >
-          <option value="Tuk-tuk">Tuk-tuk (KES 80)</option>
-          <option value="Taxi">Private Taxi (KES 250)</option>
+          <option value="Tuk-tuk">Tuk-tuk (estimate)</option>
+          <option value="Taxi">Private Taxi (estimate)</option>
         </select>
       </label>
 
